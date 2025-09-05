@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>다빈치 코드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .game-status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .player-section {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .computer-section {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #333;
+        }
+
+        .player-section-user {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            width: 60px;
+            height: 80px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.black {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+        }
+
+        .card.white {
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            color: #2c3e50;
+        }
+
+        .card.joker {
+            font-size: 24px;
+        }
+
+        .card.revealed {
+            border-color: #e74c3c;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+
+        .card.selected {
+            border-color: #f39c12;
+            transform: translateY(-5px);
+        }
+
+        .card.reveal-highlight {
+            border-color: #f39c12 !important;
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.7) !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group select, .input-group input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .deck-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .turn-phase {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 다빈치 코드</h1>
+        
+        <div class="game-status" id="gameStatus">
+            게임을 시작해주세요!
+        </div>
+
+        <div class="deck-info" id="deckInfo">
+            남은 카드: 18장
+        </div>
+
+        <div class="player-section computer-section">
+            <h3>🤖 컴퓨터</h3>
+            <div class="cards-container" id="computerCards"></div>
+        </div>
+
+        <div class="player-section player-section-user">
+            <h3>👤 플레이어</h3>
+            <div class="cards-container" id="playerCards"></div>
+        </div>
+
+        <div class="controls">
+            <button onclick="startGame()">게임 시작</button>
+            
+            <div id="turnControls" style="display: none;">
+                <div class="turn-phase" id="turnPhase">
+                    턴 시작: 카드를 뽑으세요
+                </div>
+                
+                <button onclick="drawCard()" id="drawButton">카드 뽑기</button>
+                
+                <div id="guessSection" style="display: none;">
+                    <select id="guessPosition">
+                        <option value="">위치 선택</option>
+                    </select>
+                    <input type="text" id="guessNumber" placeholder="숫자(0-11) 또는 조커(-)" maxlength="2">
+                    <button onclick="makeGuess()">추측하기</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        class DaVinciCodeGame {
+            constructor() {
+                this.deck = [];
+                this.playerCards = [];
+                this.computerCards = [];
+                this.currentPlayer = 'player';
+                this.gameStarted = false;
+                this.waitingForReveal = false;
+                this.turnStarted = false; // 턴에서 카드를 뽑았는지 여부
+                this.createDeck();
+            }
+
+            createDeck() {
+                this.deck = [];
+                
+                // 검정 카드 0-11
+                for (let i = 0; i <= 11; i++) {
+                    this.deck.push({ number: i, color: 'black', isJoker: false, revealed: false });
+                }
+                
+                // 흰색 카드 0-11
+                for (let i = 0; i <= 11; i++) {
+                    this.deck.push({ number: i, color: 'white', isJoker: false, revealed: false });
+                }
+                
+                // 검정 조커, 흰색 조커
+                this.deck.push({ number: '-', color: 'black', isJoker: true, revealed: false });
+                this.deck.push({ number: '-', color: 'white', isJoker: true, revealed: false });
+
+                this.shuffleDeck();
+                console.log('덱 생성:', this.deck.length, '장');
+            }
+
+            shuffleDeck() {
+                for (let i = this.deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+                }
+            }
+
+            dealInitialCards() {
+                this.playerCards = [];
+                this.computerCards = [];
+                
+                // 각자 4장씩
+                for (let i = 0; i < 4; i++) {
+                    this.playerCards.push(this.deck.pop());
+                    this.computerCards.push(this.deck.pop());
+                }
+
+                this.playerCards.sort(this.sortCards);
+                this.computerCards.sort(this.sortCards);
+                
+                console.log('초기 카드 배분 완료');
+            }
+
+            drawCard(player) {
+                if (this.deck.length === 0) return null;
+                
+                const newCard = this.deck.pop();
+                
+                if (player === 'player') {
+                    this.playerCards.push(newCard);
+                    this.playerCards.sort(this.sortCards);
+                } else {
+                    this.computerCards.push(newCard);
+                    this.computerCards.sort(this.sortCards);
+                }
+                
+                return newCard;
+            }
+
+            sortCards(a, b) {
+                // 조커는 맨 끝
+                if (a.isJoker && !b.isJoker) return 1;
+                if (!a.isJoker && b.isJoker) return -1;
+                
+                // 둘 다 조커면 검정이 먼저
+                if (a.isJoker && b.isJoker) {
+                    return a.color === 'black' ? -1 : 1;
+                }
+
+                // 숫자 순
+                if (a.number !== b.number) {
+                    return a.number - b.number;
+                }
+
+                // 같은 숫자면 검정이 먼저
+                return a.color === 'black' ? -1 : 1;
+            }
+
+            makeGuess(targetPlayer, position, number) {
+                const targetCards = targetPlayer === 'player' ? this.playerCards : this.computerCards;
+                
+                if (position < 0 || position >= targetCards.length) {
+                    return { success: false, message: '잘못된 위치입니다.' };
+                }
+
+                const targetCard = targetCards[position];
+                
+                if (targetCard.revealed) {
+                    return { success: false, message: '이미 공개된 카드입니다.' };
+                }
+
+                const isCorrect = (targetCard.number === number);
+                
+                if (isCorrect) {
+                    targetCard.revealed = true;
+                    return { success: true, message: '정답입니다!', card: targetCard };
+                } else {
+                    return { success: false, message: '틀렸습니다!', needReveal: true };
+                }
+            }
+
+            revealCard(player, position) {
+                const cards = player === 'player' ? this.playerCards : this.computerCards;
+                if (position >= 0 && position < cards.length && !cards[position].revealed) {
+                    cards[position].revealed = true;
+                    return cards[position];
+                }
+                return null;
+            }
+
+            checkWinCondition() {
+                const playerAllRevealed = this.playerCards.every(card => card.revealed);
+                const computerAllRevealed = this.computerCards.every(card => card.revealed);
+                
+                if (playerAllRevealed) return 'computer';
+                if (computerAllRevealed) return 'player';
+                return null;
+            }
+
+            computerTurn() {
+                // 1. 카드 뽑기 (턴 시작 시 한 번만)
+                const drawnCard = this.drawCard('computer');
+                if (!drawnCard) return null;
+                
+                // 2. 추측
+                const unrevealedCards = this.playerCards
+                    .map((card, index) => ({ card, index }))
+                    .filter(({ card }) => !card.revealed);
+                
+                if (unrevealedCards.length === 0) return null;
+
+                const randomCard = unrevealedCards[Math.floor(Math.random() * unrevealedCards.length)];
+                
+                let guessNumber;
+                if (Math.random() < 0.3) {
+                    guessNumber = '-';
+                } else {
+                    guessNumber = Math.floor(Math.random() * 12);
+                }
+                
+                return this.makeGuess('player', randomCard.index, guessNumber);
+            }
+
+            computerRevealCard() {
+                const unrevealedCards = this.computerCards
+                    .map((card, index) => ({ card, index }))
+                    .filter(({ card }) => !card.revealed);
+                
+                if (unrevealedCards.length > 0) {
+                    const randomCard = unrevealedCards[Math.floor(Math.random() * unrevealedCards.length)];
+                    return this.revealCard('computer', randomCard.index);
+                }
+                return null;
+            }
+        }
+
+        let game = new DaVinciCodeGame();
+
+        function startGame() {
+            game = new DaVinciCodeGame();
+            game.dealInitialCards();
+            game.gameStarted = true;
+            game.currentPlayer = 'player';
+            game.waitingForReveal = false;
+            game.turnStarted = false;
+            
+            updateDisplay();
+            document.getElementById('turnControls').style.display = 'block';
+            document.getElementById('gameStatus').textContent = '당신의 차례입니다!';
+            document.getElementById('turnPhase').textContent = '턴 시작: 카드를 뽑으세요';
+            updateGuessOptions();
+            showMessage('게임이 시작되었습니다!', 'success');
+        }
+
+        function drawCard() {
+            if (!game.gameStarted || game.currentPlayer !== 'player' || game.waitingForReveal || game.turnStarted) return;
+            
+            const drawnCard = game.drawCard('player');
+            if (!drawnCard) {
+                showMessage('덱에 카드가 없습니다!', 'error');
+                return;
+            }
+            
+            game.turnStarted = true; // 이 턴에서 카드를 뽑았음을 표시
+            
+            let cardDescription = drawnCard.isJoker ? 
+                `${drawnCard.color === 'black' ? '검정' : '흰색'} 조커` : 
+                `${drawnCard.color === 'black' ? '검정' : '흰색'} ${drawnCard.number}`;
+            
+            showMessage(`${cardDescription} 카드를 뽑았습니다.`, 'success');
+            
+            updateDisplay();
+            updateGuessOptions();
+            
+            // 이제 추측 단계
+            document.getElementById('drawButton').style.display = 'none';
+            document.getElementById('guessSection').style.display = 'block';
+            document.getElementById('turnPhase').textContent = '카드를 뽑았습니다. 상대방 카드를 추측하세요!';
+        }
+
+        function updateDisplay() {
+            // 컴퓨터 카드
+            const computerCardsEl = document.getElementById('computerCards');
+            computerCardsEl.innerHTML = '';
+            game.computerCards.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                let className = `card ${card.color}`;
+                if (card.isJoker) className += ' joker';
+                if (card.revealed) className += ' revealed';
+                
+                cardEl.className = className;
+                cardEl.textContent = card.revealed ? card.number : '?';
+                cardEl.onclick = () => selectCard('computer', index);
+                computerCardsEl.appendChild(cardEl);
+            });
+
+            // 플레이어 카드
+            const playerCardsEl = document.getElementById('playerCards');
+            playerCardsEl.innerHTML = '';
+            game.playerCards.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                let className = `card ${card.color}`;
+                if (card.isJoker) className += ' joker';
+                if (card.revealed) className += ' revealed';
+                
+                cardEl.className = className;
+                cardEl.textContent = card.number;
+                cardEl.onclick = () => selectCard('player', index);
+                
+                if (game.waitingForReveal && !card.revealed) {
+                    cardEl.classList.add('reveal-highlight');
+                }
+                
+                playerCardsEl.appendChild(cardEl);
+            });
+
+            document.getElementById('deckInfo').textContent = `남은 카드: ${game.deck.length}장`;
+        }
+
+        function selectCard(player, index) {
+            if (!game.gameStarted) return;
+            
+            // 카드 공개 대기 중
+            if (game.waitingForReveal && player === 'player') {
+                const card = game.playerCards[index];
+                if (!card.revealed) {
+                    const revealedCard = game.revealCard('player', index);
+                    game.waitingForReveal = false;
+                    
+                    let cardDescription = revealedCard.isJoker ? 
+                        `${revealedCard.color === 'black' ? '검정' : '흰색'} 조커` : 
+                        `${revealedCard.color === 'black' ? '검정' : '흰색'} ${revealedCard.number}`;
+                    
+                    showMessage(`${cardDescription} 카드를 공개했습니다.`, 'success');
+                    updateDisplay();
+                    
+                    const winner = game.checkWinCondition();
+                    if (winner === 'computer') {
+                        showMessage('컴퓨터가 승리했습니다!', 'error');
+                        document.getElementById('gameStatus').textContent = '게임 패배...';
+                        document.getElementById('turnControls').style.display = 'none';
+                        return;
+                    }
+                    
+                    // 컴퓨터 턴으로 변경
+                    game.currentPlayer = 'computer';
+                    game.turnStarted = false;
+                    document.getElementById('gameStatus').textContent = '컴퓨터 차례...';
+                    document.getElementById('turnControls').style.display = 'none';
+                    
+                    setTimeout(() => makeComputerMove(), 1500);
+                } else {
+                    showMessage('이미 공개된 카드입니다.', 'error');
+                }
+                return;
+            }
+            
+            // 컴퓨터 카드 선택 (추측용)
+            if (game.currentPlayer !== 'player' || player !== 'computer' || !game.turnStarted) return;
+            
+            const targetCard = game.computerCards[index];
+            if (targetCard.revealed) {
+                showMessage('이미 공개된 카드입니다.', 'error');
+                return;
+            }
+            
+            document.querySelectorAll('.card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const cardEl = document.getElementById('computerCards').children[index];
+            cardEl.classList.add('selected');
+            
+            document.getElementById('guessPosition').value = index;
+            
+            const colorName = targetCard.color === 'black' ? '검정' : '흰색';
+            showMessage(`${colorName} 카드를 선택했습니다.`, 'success');
+        }
+
+        function updateGuessOptions() {
+            const positionSelect = document.getElementById('guessPosition');
+            positionSelect.innerHTML = '<option value="">위치 선택</option>';
+            
+            game.computerCards.forEach((card, index) => {
+                if (!card.revealed) {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    const colorName = card.color === 'black' ? '검정' : '흰색';
+                    option.textContent = `위치 ${index + 1} (${colorName})`;
+                    positionSelect.appendChild(option);
+                }
+            });
+        }
+
+        function makeGuess() {
+            if (!game.gameStarted || game.currentPlayer !== 'player' || game.waitingForReveal || !game.turnStarted) return;
+
+            const position = parseInt(document.getElementById('guessPosition').value);
+            const numberInput = document.getElementById('guessNumber').value.trim();
+
+            let number;
+            if (numberInput === '-') {
+                number = '-';
+            } else {
+                number = parseInt(numberInput);
+                if (isNaN(number) || number < 0 || number > 11) {
+                    showMessage('숫자는 0-11 또는 조커(-)를 입력해주세요!', 'error');
+                    return;
+                }
+            }
+
+            if (isNaN(position)) {
+                showMessage('위치를 선택해주세요!', 'error');
+                return;
+            }
+
+            const result = game.makeGuess('computer', position, number);
+            
+            if (result.success) {
+                let cardDescription = result.card.isJoker ? 
+                    `${result.card.color === 'black' ? '검정' : '흰색'} 조커` : 
+                    `${result.card.color === 'black' ? '검정' : '흰색'} ${result.card.number}`;
+                
+                showMessage(`정답입니다! ${cardDescription}`, 'success');
+                
+                const winner = game.checkWinCondition();
+                if (winner === 'player') {
+                    showMessage('축하합니다! 승리했습니다!', 'success');
+                    document.getElementById('gameStatus').textContent = '게임 승리!';
+                    document.getElementById('turnControls').style.display = 'none';
+                    updateDisplay();
+                    return;
+                }
+                
+                updateDisplay();
+                updateGuessOptions();
+                
+                // 정답이면 계속 추측 (카드는 더 이상 뽑지 않음)
+                document.getElementById('turnPhase').textContent = '정답! 계속 추측하세요!';
+                document.getElementById('gameStatus').textContent = '정답! 계속 추측하세요!';
+            } else {
+                showMessage('틀렸습니다! 공개할 본인 카드를 선택하세요.', 'error');
+                game.waitingForReveal = true;
+                document.getElementById('gameStatus').textContent = '공개할 본인 카드를 클릭하세요';
+                document.getElementById('turnControls').style.display = 'none';
+                updateDisplay();
+            }
+
+            // 입력 초기화
+            document.getElementById('guessPosition').value = '';
+            document.getElementById('guessNumber').value = '';
+            
+            document.querySelectorAll('.card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+        }
+
+        function makeComputerMove() {
+            if (game.currentPlayer !== 'computer') return;
+            
+            showMessage('컴퓨터가 카드를 뽑고 있습니다...', 'success');
+            
+            setTimeout(() => {
+                const computerResult = game.computerTurn();
+                
+                if (computerResult && computerResult.success) {
+                    showMessage('컴퓨터가 맞췄습니다!', 'error');
+                    
+                    const winner = game.checkWinCondition();
+                    if (winner === 'computer') {
+                        showMessage('컴퓨터가 승리했습니다!', 'error');
+                        document.getElementById('gameStatus').textContent = '게임 패배...';
+                        updateDisplay();
+                        return;
+                    }
+                    
+                    updateDisplay();
+                    // 컴퓨터가 계속 추측 (카드는 더 이상 뽑지 않음)
+                    setTimeout(() => {
+                        showMessage('컴퓨터가 계속 추측 중...', 'success');
+                        setTimeout(() => makeComputerGuessOnly(), 1000);
+                    }, 1500);
+                } else if (computerResult && computerResult.needReveal) {
+                    showMessage('컴퓨터가 틀렸습니다!', 'success');
+                    
+                    const revealedCard = game.computerRevealCard();
+                    
+                    const winner = game.checkWinCondition();
+                    if (winner === 'player') {
+                        showMessage('축하합니다! 승리했습니다!', 'success');
+                        document.getElementById('gameStatus').textContent = '게임 승리!';
+                        updateDisplay();
+                        return;
+                    }
+                    
+                    // 플레이어 턴으로 변경
+                    game.currentPlayer = 'player';
+                    game.turnStarted = false;
+                    document.getElementById('gameStatus').textContent = '당신의 차례입니다!';
+                    document.getElementById('turnControls').style.display = 'block';
+                    document.getElementById('drawButton').style.display = 'block';
+                    document.getElementById('guessSection').style.display = 'none';
+                    document.getElementById('turnPhase').textContent = '턴 시작: 카드를 뽑으세요';
+                    
+                    updateDisplay();
+                    updateGuessOptions();
+                }
+            }, 1000);
+        }
+
+        function makeComputerGuessOnly() {
+            // 컴퓨터가 카드 뽑지 않고 추측만 계속
+            const unrevealedCards = game.playerCards
+                .map((card, index) => ({ card, index }))
+                .filter(({ card }) => !card.revealed);
+            
+            if (unrevealedCards.length === 0) return;
+
+            const randomCard = unrevealedCards[Math.floor(Math.random() * unrevealedCards.length)];
+            
+            let guessNumber;
+            if (Math.random() < 0.3) {
+                guessNumber = '-';
+            } else {
+                guessNumber = Math.floor(Math.random() * 12);
+            }
+            
+            const result = game.makeGuess('player', randomCard.index, guessNumber);
+            
+            if (result && result.success) {
+                showMessage('컴퓨터가 또 맞췄습니다!', 'error');
+                
+                const winner = game.checkWinCondition();
+                if (winner === 'computer') {
+                    showMessage('컴퓨터가 승리했습니다!', 'error');
+                    document.getElementById('gameStatus').textContent = '게임 패배...';
+                    updateDisplay();
+                    return;
+                }
+                
+                updateDisplay();
+                setTimeout(() => makeComputerGuessOnly(), 2000);
+            } else if (result && result.needReveal) {
+                showMessage('컴퓨터가 틀렸습니다!', 'success');
+                
+                const revealedCard = game.computerRevealCard();
+                
+                const winner = game.checkWinCondition();
+                if (winner === 'player') {
+                    showMessage('축하합니다! 승리했습니다!', 'success');
+                    document.getElementById('gameStatus').textContent = '게임 승리!';
+                    updateDisplay();
+                    return;
+                }
+                
+                // 플레이어 턴으로 변경
+                game.currentPlayer = 'player';
+                game.turnStarted = false;
+                document.getElementById('gameStatus').textContent = '당신의 차례입니다!';
+                document.getElementById('turnControls').style.display = 'block';
+                document.getElementById('drawButton').style.display = 'block';
+                document.getElementById('guessSection').style.display = 'none';
+                document.getElementById('turnPhase').textContent = '턴 시작: 카드를 뽑으세요';
+                
+                updateDisplay();
+                updateGuessOptions();
+            }
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            
+            setTimeout(() => {
+                messageEl.textContent = '';
+                messageEl.className = 'message';
+            }, 3000);
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
